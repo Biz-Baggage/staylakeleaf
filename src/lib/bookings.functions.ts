@@ -15,7 +15,7 @@ export type ReservedRange = { check_in: string; check_out: string };
 
 export const listReservedRanges = createServerFn({ method: "GET" }).handler(async (): Promise<ReservedRange[]> => {
   const sb = publicClient();
-  const { data, error } = await sb.rpc("get_reserved_ranges");
+  const { data, error } = await (sb as any).rpc("get_reserved_ranges");
   if (error) throw error;
   return (data ?? []) as ReservedRange[];
 });
