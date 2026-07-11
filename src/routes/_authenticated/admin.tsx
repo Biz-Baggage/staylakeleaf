@@ -124,6 +124,21 @@ function BookingsPanel() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [listMonth, setListMonth] = useState<string>("all");
+
+  const monthOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of bookings) set.add(b.check_in.slice(0, 7));
+    return Array.from(set).sort().reverse().map((ym) => {
+      const [y, m] = ym.split("-").map(Number);
+      return { value: ym, label: new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }) };
+    });
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    if (listMonth === "all") return bookings;
+    return bookings.filter((b) => b.check_in.slice(0, 7) === listMonth);
+  }, [bookings, listMonth]);
 
   const today = useMemo(() => new Date(), []);
   const view = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
