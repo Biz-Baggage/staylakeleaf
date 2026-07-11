@@ -82,7 +82,10 @@ function Nav({ bundle }: { bundle: ContentBundle }) {
     <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-background/70 border-b border-border/60">
       <div className="container-page flex items-center justify-between h-16">
         <a href="#top" className="flex items-center gap-2 font-display text-lg font-semibold text-primary">
-          <Leaf className="h-5 w-5" strokeWidth={1.75} /> <span>{c.brand ?? "Lake Leaf"}</span>
+          {bundle.media.logo?.url
+            ? <img src={bundle.media.logo.url} alt={c.brand ?? "Lake Leaf"} className="h-8 w-auto object-contain" />
+            : <Leaf className="h-5 w-5" strokeWidth={1.75} />}
+          <span>{c.brand ?? "Lake Leaf"}</span>
         </a>
         <nav className="hidden md:flex items-center gap-8 text-sm text-foreground/80">
           {links.map(([l, h]) => <a key={h} href={h} className="hover:text-primary transition-colors">{l}</a>)}
@@ -546,7 +549,10 @@ function Footer({ bundle }: { bundle: ContentBundle }) {
       <div className="container-page py-14 grid md:grid-cols-4 gap-10">
         <div className="md:col-span-2">
           <div className="flex items-center gap-2 font-display text-xl text-primary font-semibold">
-            <Leaf className="h-5 w-5" strokeWidth={1.75} /> {c.brand}
+            {bundle.media.logo?.url
+              ? <img src={bundle.media.logo.url} alt={c.brand} className="h-8 w-auto object-contain" />
+              : <Leaf className="h-5 w-5" strokeWidth={1.75} />}
+            {c.brand}
           </div>
           <p className="mt-4 text-muted-foreground max-w-sm">{c.tagline}</p>
         </div>
