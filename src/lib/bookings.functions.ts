@@ -1,5 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+function publicClient() {
+  return createClient<Database>(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+  );
+}
+
+export type ReservedRange = { check_in: string; check_out: string };
+
+export const listReservedRanges = createServerFn({ method: "GET" }).handler(async (): Promise<ReservedRange[]> => {
+  const sb = publicClient();
+  const { data, error } = await sb.rpc("get_reserved_ranges");
+  if (error) throw error;
+  return (data ?? []) as ReservedRange[];
+});
 
 export type BookingStatus = "new" | "contacted" | "confirmed" | "declined" | "cancelled";
 
