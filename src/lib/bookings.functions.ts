@@ -58,6 +58,7 @@ export const upsertBooking = createServerFn({ method: "POST" })
     check_out: string;
     phone?: string;
     notes?: string;
+    cost?: number | null;
     status?: BookingStatus;
   }) => {
     if (!input.guest_name?.trim()) throw new Error("Guest name required");
@@ -65,6 +66,7 @@ export const upsertBooking = createServerFn({ method: "POST" })
     if (!input.check_in || !input.check_out) throw new Error("Dates required");
     if (new Date(input.check_out) <= new Date(input.check_in)) throw new Error("Check-out must be after check-in");
     if (!Number.isFinite(input.total_guests) || input.total_guests < 1) throw new Error("Guests must be at least 1");
+    if (input.cost != null && (!Number.isFinite(input.cost) || input.cost < 0)) throw new Error("Cost must be a positive number");
     return input;
   })
   .handler(async ({ data, context }): Promise<Booking> => {
@@ -76,6 +78,7 @@ export const upsertBooking = createServerFn({ method: "POST" })
       check_out: data.check_out,
       phone: data.phone?.trim() || null,
       notes: data.notes?.trim() || null,
+      cost: data.cost ?? null,
       status: data.status ?? "confirmed",
       created_by: userId,
     };
