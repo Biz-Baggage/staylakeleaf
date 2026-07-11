@@ -303,7 +303,10 @@ function BookingsPanel() {
                 </Select>
               </div>
             </div>
-            <div><Label>Phone (optional)</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Phone (optional)</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+              <div><Label>Cost (optional)</Label><Input type="number" min={0} step="0.01" placeholder="e.g. 12000" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} /></div>
+            </div>
             <div><Label>Notes (optional)</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
           </div>
           <DialogFooter className="gap-2">
