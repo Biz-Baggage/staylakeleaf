@@ -149,6 +149,7 @@ export const SECTION_LABELS: Record<string, string> = {
 };
 
 export const MEDIA_SLOTS = [
+  { slot: "logo", label: "Brand logo (nav & footer)" },
   { slot: "hero", label: "Hero background" },
   { slot: "journey", label: "Journey (boat)" },
   { slot: "bedroom", label: "Bedroom" },
