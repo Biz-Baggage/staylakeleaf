@@ -22,7 +22,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -34,20 +33,10 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) throw error;
-        toast.success("Welcome back");
-        navigate({ to: search.redirect ?? "/admin", replace: true });
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: { emailRedirectTo: window.location.origin + "/admin" },
-        });
-        if (error) throw error;
-        toast.success("Account created. Check your email if confirmation is required.");
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) throw error;
+      toast.success("Welcome back");
+      navigate({ to: search.redirect ?? "/admin", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
       toast.error(msg);
@@ -63,8 +52,8 @@ function AuthPage() {
           <Leaf className="h-5 w-5" /> Lake Leaf
         </Link>
         <div className="rounded-2xl bg-card border border-border p-7 shadow-[var(--shadow-soft)]">
-          <h1 className="text-2xl font-display font-medium">Admin sign in</h1>
-          <p className="text-sm text-muted-foreground mt-1">Only Lake Leaf co-owners can access the admin panel.</p>
+          <h1 className="text-2xl font-display font-medium">Sign in</h1>
+          <p className="text-sm text-muted-foreground mt-1">Sign in with the account provided by the Lake Leaf admin.</p>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
@@ -72,19 +61,12 @@ function AuthPage() {
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
+              <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" autoComplete="current-password" />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+              {loading ? "Please wait…" : "Sign in"}
             </Button>
           </form>
-          <button
-            type="button"
-            className="mt-4 text-xs text-muted-foreground hover:text-primary w-full text-center"
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          >
-            {mode === "signin" ? "Need to create the first admin account?" : "Already have an account? Sign in"}
-          </button>
         </div>
         <p className="mt-4 text-center text-xs text-muted-foreground">
           <Link to="/" className="hover:text-primary">← Back to Lake Leaf</Link>
