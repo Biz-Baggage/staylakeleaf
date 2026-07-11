@@ -124,27 +124,22 @@ function BookingsPanel() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
-  const [listMonth, setListMonth] = useState<string>("all");
-
-  const monthOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const b of bookings) set.add(b.check_in.slice(0, 7));
-    return Array.from(set).sort().reverse().map((ym) => {
-      const [y, m] = ym.split("-").map(Number);
-      return { value: ym, label: new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }) };
-    });
-  }, [bookings]);
-
-  const filteredBookings = useMemo(() => {
-    if (listMonth === "all") return bookings;
-    return bookings.filter((b) => b.check_in.slice(0, 7) === listMonth);
-  }, [bookings, listMonth]);
+  const [showAllMonths, setShowAllMonths] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const view = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
   const monthLabel = view.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const viewKey = `${view.getFullYear()}-${String(view.getMonth() + 1).padStart(2, "0")}`;
   const daysInMonth = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
   const firstWeekday = view.getDay();
+
+  const filteredBookings = useMemo(() => {
+    if (showAllMonths) return bookings;
+    // Include any booking whose stay overlaps the visible month
+    const monthStart = new Date(view.getFullYear(), view.getMonth(), 1);
+    const monthEnd = new Date(view.getFullYear(), view.getMonth() + 1, 1);
+    return bookings.filter((b) => new Date(b.check_in) < monthEnd && new Date(b.check_out) > monthStart);
+  }, [bookings, showAllMonths, viewKey]);
 
   const cells: (string | null)[] = [];
   for (let i = 0; i < firstWeekday; i++) cells.push(null);
