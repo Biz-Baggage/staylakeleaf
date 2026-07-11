@@ -30,6 +30,7 @@ export type Booking = {
   check_out: string;
   phone: string | null;
   notes: string | null;
+  cost: number | null;
   status: BookingStatus;
   created_at: string;
   updated_at: string;
