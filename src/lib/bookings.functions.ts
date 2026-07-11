@@ -117,14 +117,14 @@ async function syncBookingsToSheet(sb: any): Promise<void> {
   const tab = process.env.GOOGLE_SHEETS_TAB || "Bookings";
   const { data, error } = await sb
     .from("bookings")
-    .select("id,guest_name,total_guests,check_in,check_out,phone,notes,status,created_at,updated_at")
+    .select("id,guest_name,total_guests,check_in,check_out,phone,notes,cost,status,created_at,updated_at")
     .order("check_in", { ascending: true });
   if (error) throw error;
 
-  const header = ["ID","Guest","Guests","Check-in","Check-out","Phone","Notes","Status","Created","Updated"];
+  const header = ["ID","Guest","Guests","Check-in","Check-out","Phone","Notes","Cost","Status","Created","Updated"];
   const rows = (data ?? []).map((b: any) => [
     b.id, b.guest_name, String(b.total_guests), b.check_in, b.check_out,
-    b.phone ?? "", b.notes ?? "", b.status, b.created_at, b.updated_at,
+    b.phone ?? "", b.notes ?? "", b.cost != null ? String(b.cost) : "", b.status, b.created_at, b.updated_at,
   ]);
   const values = [header, ...rows];
 
