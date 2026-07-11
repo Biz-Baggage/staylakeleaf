@@ -124,27 +124,22 @@ function BookingsPanel() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
-  const [listMonth, setListMonth] = useState<string>("all");
-
-  const monthOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const b of bookings) set.add(b.check_in.slice(0, 7));
-    return Array.from(set).sort().reverse().map((ym) => {
-      const [y, m] = ym.split("-").map(Number);
-      return { value: ym, label: new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }) };
-    });
-  }, [bookings]);
-
-  const filteredBookings = useMemo(() => {
-    if (listMonth === "all") return bookings;
-    return bookings.filter((b) => b.check_in.slice(0, 7) === listMonth);
-  }, [bookings, listMonth]);
+  const [showAllMonths, setShowAllMonths] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const view = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
   const monthLabel = view.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const viewKey = `${view.getFullYear()}-${String(view.getMonth() + 1).padStart(2, "0")}`;
   const daysInMonth = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
   const firstWeekday = view.getDay();
+
+  const filteredBookings = useMemo(() => {
+    if (showAllMonths) return bookings;
+    // Include any booking whose stay overlaps the visible month
+    const monthStart = new Date(view.getFullYear(), view.getMonth(), 1);
+    const monthEnd = new Date(view.getFullYear(), view.getMonth() + 1, 1);
+    return bookings.filter((b) => new Date(b.check_in) < monthEnd && new Date(b.check_out) > monthStart);
+  }, [bookings, showAllMonths, viewKey]);
 
   const cells: (string | null)[] = [];
   for (let i = 0; i < firstWeekday; i++) cells.push(null);
@@ -244,22 +239,15 @@ function BookingsPanel() {
 
       <Card className="p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <h3 className="font-display text-lg">All bookings</h3>
-          <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground">Filter month</Label>
-            <Select
-              value={listMonth}
-              onValueChange={setListMonth}
-            >
-              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All months</SelectItem>
-                {monthOptions.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div>
+            <h3 className="font-display text-lg">Bookings — {showAllMonths ? "all months" : monthLabel}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {showAllMonths ? "Showing every booking." : "Synced with the calendar above. Use the arrows to change month."}
+            </p>
           </div>
+          <Button variant="outline" size="sm" onClick={() => setShowAllMonths((v) => !v)}>
+            {showAllMonths ? "Show current month" : "Show all months"}
+          </Button>
         </div>
         {filteredBookings.length === 0 ? (
           <p className="text-sm text-muted-foreground">No bookings for this month.</p>
