@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { checkAdmin } from "@/lib/admin.functions";
+import { checkAdmin, listUsers, createViewerUser, deleteManagedUser, setUserAdmin, type ManagedUser } from "@/lib/admin.functions";
 import {
   listBookings, upsertBooking, deleteBooking,
   type Booking, type BookingStatus,
