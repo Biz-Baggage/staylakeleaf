@@ -293,7 +293,47 @@ function BookingsPanel() {
   );
 }
 
-/* ================= CONTENT EDITOR ================= */
+/* ================= CONTENT EDITOR (form fields) ================= */
+
+const SECTION_MEDIA: Record<string, string[]> = {
+  hero: ["hero"],
+  journey: ["journey"],
+  accommodation: ["bedroom", "exterior", "rooftop"],
+};
+
+const KEY_LABELS: Record<string, string> = {
+  eyebrow: "Eyebrow (small label)",
+  title: "Title",
+  title_prefix: "Title (before italic)",
+  title_italic: "Title (italic word)",
+  title_suffix: "Title (after italic)",
+  subtitle: "Subtitle",
+  body: "Body text",
+  primary_cta: "Primary button",
+  secondary_cta: "Secondary button",
+  cta: "Button label",
+  whatsapp_number: "WhatsApp number",
+  whatsapp_message: "WhatsApp message",
+  location: "Location",
+  brand: "Brand name",
+  tagline: "Tagline",
+  footer_note: "Footer note",
+  label: "Label",
+  icon: "Icon name (lucide)",
+  text: "Text",
+  q: "Question",
+  a: "Answer",
+  who: "Author",
+  name: "Name",
+  desc: "Description",
+  slot: "Image slot",
+  caption: "Caption",
+  alt: "Alt text",
+};
+
+function prettify(key: string) {
+  return KEY_LABELS[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function ContentPanel() {
   const qc = useQueryClient();
@@ -303,24 +343,18 @@ function ContentPanel() {
 
   const { data: bundle, isLoading } = useQuery({ queryKey: ["site-content-admin"], queryFn: () => getFn() });
   const [section, setSection] = useState<string>(SECTION_KEYS[0]);
-  const [draft, setDraft] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const [draft, setDraft] = useState<any>(null);
 
   useEffect(() => {
     if (!bundle) return;
     const current = bundle.content[section] ?? (DEFAULT_CONTENT as any)[section] ?? {};
-    setDraft(JSON.stringify(current, null, 2));
-    setError(null);
+    setDraft(JSON.parse(JSON.stringify(current)));
   }, [section, bundle]);
 
   const saveMut = useMutation({
-    mutationFn: async () => {
-      let parsed: any;
-      try { parsed = JSON.parse(draft); } catch (e) { throw new Error("Invalid JSON: " + (e as Error).message); }
-      await saveFn({ data: { section, data: parsed } });
-    },
+    mutationFn: async () => { await saveFn({ data: { section, data: draft } }); },
     onSuccess: () => { toast.success("Section saved"); qc.invalidateQueries({ queryKey: ["site-content-admin"] }); qc.invalidateQueries({ queryKey: ["site-content-public"] }); },
-    onError: (e) => { const m = e instanceof Error ? e.message : "Save failed"; setError(m); toast.error(m); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Save failed"),
   });
 
   const resetMut = useMutation({
@@ -328,21 +362,23 @@ function ContentPanel() {
     onSuccess: () => {
       toast.success("Reset to default");
       const def = (DEFAULT_CONTENT as any)[section] ?? {};
-      setDraft(JSON.stringify(def, null, 2));
+      setDraft(JSON.parse(JSON.stringify(def)));
       qc.invalidateQueries({ queryKey: ["site-content-admin"] });
       qc.invalidateQueries({ queryKey: ["site-content-public"] });
     },
   });
 
-  if (isLoading) return <div className="grid place-items-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+  if (isLoading || draft === null || !bundle) return <div className="grid place-items-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+
+  const relatedSlots = SECTION_MEDIA[section] ?? [];
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="font-display text-2xl">Site content</h2>
-        <p className="text-sm text-muted-foreground mt-1">Every section on the landing page. Edit the text, save, and it goes live.</p>
+        <p className="text-sm text-muted-foreground mt-1">Every section on the landing page. Edit the fields, save, and it goes live.</p>
       </div>
-      <Card className="p-6 space-y-4">
+      <Card className="p-6 space-y-6">
         <div className="flex flex-wrap gap-3 items-end justify-between">
           <div className="min-w-[240px]">
             <Label>Section</Label>
@@ -364,12 +400,136 @@ function ContentPanel() {
             </Button>
           </div>
         </div>
-        <div>
-          <Label className="text-xs text-muted-foreground">Section fields (JSON) — edit strings between the quotes</Label>
-          <Textarea value={draft} onChange={(e) => { setDraft(e.target.value); setError(null); }} rows={22} className="font-mono text-xs mt-1" spellCheck={false} />
-          {error && <p className="text-xs text-destructive mt-2">{error}</p>}
-        </div>
+
+        {relatedSlots.length > 0 && (
+          <div className="rounded-lg border border-border/70 p-4 bg-secondary/30 space-y-3">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Section images</p>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {relatedSlots.map((slot) => <InlineSlotUploader key={slot} slot={slot} bundle={bundle} />)}
+            </div>
+          </div>
+        )}
+
+        <FieldEditor value={draft} onChange={setDraft} bundle={bundle} />
       </Card>
+    </div>
+  );
+}
+
+type BundleLike = { media: Record<string, { url: string; alt?: string }> };
+
+function FieldEditor({ value, onChange, bundle, keyHint }: {
+  value: any; onChange: (v: any) => void; bundle: BundleLike; keyHint?: string;
+}) {
+  if (Array.isArray(value)) {
+    return (
+      <div className="space-y-3">
+        {value.map((item, i) => (
+          <div key={i} className="rounded-md border border-border p-3 bg-background">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">Item {i + 1}</span>
+              <Button size="icon" variant="ghost" onClick={() => {
+                const next = value.slice(); next.splice(i, 1); onChange(next);
+              }}><Trash2 className="h-3.5 w-3.5" /></Button>
+            </div>
+            <FieldEditor value={item} bundle={bundle}
+              onChange={(v) => { const next = value.slice(); next[i] = v; onChange(next); }} />
+          </div>
+        ))}
+        <Button size="sm" variant="outline" onClick={() => {
+          const template = value[0];
+          let blank: any = "";
+          if (template && typeof template === "object" && !Array.isArray(template)) {
+            blank = Object.fromEntries(Object.keys(template).map((k) => [k, typeof (template as any)[k] === "number" ? 0 : Array.isArray((template as any)[k]) ? [] : ""]));
+          } else if (typeof template === "number") blank = 0;
+          onChange([...value, blank]);
+        }}><Plus className="h-3.5 w-3.5 mr-1.5" /> Add item</Button>
+      </div>
+    );
+  }
+
+  if (value && typeof value === "object") {
+    return (
+      <div className="space-y-4">
+        {Object.entries(value).map(([k, v]) => (
+          <div key={k}>
+            <Label className="mb-1.5 block">{prettify(k)}</Label>
+            <FieldEditor value={v} bundle={bundle} keyHint={k}
+              onChange={(nv) => onChange({ ...value, [k]: nv })} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (typeof value === "number") {
+    return <Input type="number" value={value} onChange={(e) => onChange(Number(e.target.value))} />;
+  }
+  if (typeof value === "boolean") {
+    return <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />;
+  }
+
+  const str = value == null ? "" : String(value);
+  const isSlotField = keyHint === "slot";
+  const multiline = str.length > 80 || str.includes("\n") || keyHint === "body" || keyHint === "a" || keyHint === "desc" || keyHint === "subtitle";
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-2 items-start">
+        {multiline
+          ? <Textarea value={str} onChange={(e) => onChange(e.target.value)} rows={3} className="flex-1" />
+          : <Input value={str} onChange={(e) => onChange(e.target.value)} className="flex-1" />}
+        {isSlotField && str && <InlineSlotUploader slot={str} bundle={bundle} compact />}
+      </div>
+      {isSlotField && str && (
+        <p className="text-[11px] text-muted-foreground">Image for slot “{str}”. Upload replaces the current photo.</p>
+      )}
+    </div>
+  );
+}
+
+function InlineSlotUploader({ slot, bundle, compact }: { slot: string; bundle: BundleLike; compact?: boolean }) {
+  const qc = useQueryClient();
+  const saveFn = useServerFn(saveMediaSlot);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const current = bundle.media[slot];
+
+  const mut = useMutation({
+    mutationFn: async (file: File) => {
+      const url = await uploadToBucket(file, slot);
+      await saveFn({ data: { slot, url } });
+    },
+    onSuccess: () => { toast.success(`Image “${slot}” updated`); qc.invalidateQueries({ queryKey: ["site-content-admin"] }); qc.invalidateQueries({ queryKey: ["site-content-public"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Upload failed"),
+  });
+
+  if (compact) {
+    return (
+      <>
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+          const f = e.target.files?.[0]; if (f) mut.mutate(f); e.target.value = "";
+        }} />
+        <Button type="button" size="icon" variant="outline" onClick={() => inputRef.current?.click()} disabled={mut.isPending} title={`Upload image for ${slot}`}>
+          {mut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        </Button>
+      </>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-border bg-background overflow-hidden">
+      <div className="aspect-[4/3] bg-secondary grid place-items-center">
+        {current?.url ? <img src={current.url} alt={slot} className="w-full h-full object-cover" /> : <span className="text-[10px] text-muted-foreground">No image</span>}
+      </div>
+      <div className="p-2 flex items-center justify-between gap-2">
+        <span className="text-xs truncate">{slot}</span>
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+          const f = e.target.files?.[0]; if (f) mut.mutate(f); e.target.value = "";
+        }} />
+        <Button size="sm" variant="outline" onClick={() => inputRef.current?.click()} disabled={mut.isPending}>
+          {mut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+        </Button>
+      </div>
     </div>
   );
 }

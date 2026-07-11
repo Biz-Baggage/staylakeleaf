@@ -65,7 +65,7 @@ export const DEFAULT_CONTENT: Record<string, SiteContent> = {
       { title: "Stay Comfort", items: [{ icon: "Wind", label: "Air Conditioning" }, { icon: "Sun", label: "Ceiling Fans" }, { icon: "Wifi", label: "Wi-Fi" }, { icon: "BedDouble", label: "Fresh Linen" }] },
       { title: "Kitchen", items: [{ icon: "Refrigerator", label: "Refrigerator" }, { icon: "Microwave", label: "Microwave Oven" }, { icon: "Utensils", label: "Gas Stove" }, { icon: "WashingMachine", label: "Washing Machine" }] },
       { title: "Outdoor", items: [{ icon: "Trees", label: "Garden" }, { icon: "Sun", label: "Rooftop" }, { icon: "Coffee", label: "Outdoor Seating" }, { icon: "Car", label: "Parking (at jetty)" }] },
-      { title: "Activities", items: [{ icon: "Sailboat", label: "Boat Rides" }, { icon: "Fish", label: "Fishing" }, { icon: "Bike", label: "Cycling" }, { icon: "Camera", label: "Photography Spots" }] },
+      { title: "Activities", items: [{ icon: "Sailboat", label: "Boat Rides" }, { icon: "Fish", label: "Fishing" }, { icon: "Waves", label: "Kayaking" }, { icon: "Camera", label: "Photography Spots" }] },
     ],
   },
   experiences: {
