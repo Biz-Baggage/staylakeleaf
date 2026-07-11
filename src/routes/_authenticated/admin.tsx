@@ -683,3 +683,53 @@ function GalleryPanel() {
     </div>
   );
 }
+
+function ViewerBookings({ onSignOut }: { onSignOut: () => void }) {
+  const listFn = useServerFn(listBookings);
+  const { data: bookings = [], isLoading } = useQuery({
+    queryKey: ["bookings-viewer"],
+    queryFn: () => listFn(),
+    staleTime: 30_000,
+  });
+
+  return (
+    <div className="min-h-screen bg-secondary/30">
+      <header className="border-b border-border bg-background/90 backdrop-blur sticky top-0 z-30">
+        <div className="container-page h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 font-display text-lg text-primary">
+            <Leaf className="h-5 w-5" /> Lake Leaf
+          </Link>
+          <Button variant="outline" size="sm" onClick={onSignOut}>
+            <LogOut className="h-4 w-4 mr-2" /> Sign out
+          </Button>
+        </div>
+      </header>
+      <main className="container-page py-10">
+        <div className="mb-6">
+          <h1 className="text-2xl font-display font-medium">Booking slots</h1>
+          <p className="text-sm text-muted-foreground mt-1">Read-only view of upcoming and past reservations.</p>
+        </div>
+        {isLoading ? (
+          <div className="grid place-items-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+        ) : bookings.length === 0 ? (
+          <Card className="p-8 text-center text-muted-foreground">No bookings yet.</Card>
+        ) : (
+          <div className="grid gap-3">
+            {bookings.map((b) => (
+              <Card key={b.id} className="p-5 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <div className="font-medium">{b.guest_name}</div>
+                  <div className="text-sm text-muted-foreground mt-0.5">
+                    {b.check_in} → {b.check_out} · {b.total_guests} guest{b.total_guests === 1 ? "" : "s"}
+                  </div>
+                  {b.notes && <div className="text-sm text-muted-foreground mt-1">{b.notes}</div>}
+                </div>
+                <Badge variant="secondary" className="capitalize">{b.status}</Badge>
+              </Card>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
