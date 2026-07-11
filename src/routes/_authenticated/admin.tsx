@@ -239,22 +239,15 @@ function BookingsPanel() {
 
       <Card className="p-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <h3 className="font-display text-lg">All bookings</h3>
-          <div className="flex items-center gap-2">
-            <Label className="text-xs text-muted-foreground">Filter month</Label>
-            <Select
-              value={listMonth}
-              onValueChange={setListMonth}
-            >
-              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All months</SelectItem>
-                {monthOptions.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div>
+            <h3 className="font-display text-lg">Bookings — {showAllMonths ? "all months" : monthLabel}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {showAllMonths ? "Showing every booking." : "Synced with the calendar above. Use the arrows to change month."}
+            </p>
           </div>
+          <Button variant="outline" size="sm" onClick={() => setShowAllMonths((v) => !v)}>
+            {showAllMonths ? "Show current month" : "Show all months"}
+          </Button>
         </div>
         {filteredBookings.length === 0 ? (
           <p className="text-sm text-muted-foreground">No bookings for this month.</p>
