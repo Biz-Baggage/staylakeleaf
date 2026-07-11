@@ -1,13 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Leaf, Waves, Sailboat, Flame, Mountain, Sun, Wifi, Wind, Utensils, Refrigerator,
   Microwave, WashingMachine, Trees, Car, Bike, Fish, Camera, MessageCircle,
-  MapPin, ChevronLeft, ChevronRight, ChevronDown, Users, BedDouble, Coffee, Star,
+  MapPin, ChevronLeft, ChevronRight, ChevronDown, Users, BedDouble, Coffee, Star, X,
   type LucideIcon,
 } from "lucide-react";
+
 
 import heroLake from "@/assets/hero-lake.jpg";
 import journeyBoat from "@/assets/journey-boat.jpg";
@@ -302,16 +302,17 @@ function Experiences({ bundle }: { bundle: ContentBundle }) {
 
 function Gallery({ bundle }: { bundle: ContentBundle }) {
   const g: any = bundle.content.gallery;
-  const shots = [
-    { src: image(bundle, "hero"), span: "col-span-2 row-span-2 aspect-square" },
-    { src: image(bundle, "bedroom"), span: "aspect-[4/5]" },
-    { src: image(bundle, "rooftop"), span: "aspect-[4/3]" },
-    { src: image(bundle, "kayak"), span: "aspect-[4/3]" },
-    { src: image(bundle, "sunrise"), span: "col-span-2 aspect-[16/9]" },
-    { src: image(bundle, "campfire"), span: "aspect-[4/5]" },
-    { src: image(bundle, "bbq"), span: "aspect-[4/3]" },
-    { src: image(bundle, "exterior"), span: "col-span-2 aspect-[16/9]" },
+  const fallbackShots = [
+    image(bundle, "hero"), image(bundle, "bedroom"), image(bundle, "rooftop"),
+    image(bundle, "kayak"), image(bundle, "sunrise"), image(bundle, "campfire"),
+    image(bundle, "bbq"), image(bundle, "exterior"),
   ];
+  const dbShots = bundle.gallery.map((x) => x.url);
+  const allShots = dbShots.length > 0 ? dbShots : fallbackShots;
+  const preview = allShots.slice(0, 8);
+  const spans = ["col-span-2 row-span-2 aspect-square","aspect-[4/5]","aspect-[4/3]","aspect-[4/3]","col-span-2 aspect-[16/9]","aspect-[4/5]","aspect-[4/3]","col-span-2 aspect-[16/9]"];
+  const [lightbox, setLightbox] = useState<number | null>(null);
+
   return (
     <section id="gallery" className="py-24 md:py-32 bg-secondary/40">
       <div className="container-page">
@@ -323,15 +324,49 @@ function Gallery({ bundle }: { bundle: ContentBundle }) {
           <p className="text-muted-foreground max-w-sm">{g.subtitle}</p>
         </div>
         <div className="mt-12 grid grid-cols-2 md:grid-cols-4 auto-rows-[140px] md:auto-rows-[180px] gap-3">
-          {shots.map((s, i) => (
-            <img key={i} src={s.src} alt="Lake Leaf gallery" loading="lazy"
-              className={`w-full h-full object-cover rounded-xl hover:brightness-110 transition ${s.span}`} />
+          {preview.map((src, i) => (
+            <button key={i} onClick={() => setLightbox(i)} className={`group overflow-hidden rounded-xl ${spans[i] ?? "aspect-[4/3]"}`}>
+              <img src={src} alt="Lake Leaf gallery" loading="lazy"
+                className="w-full h-full object-cover group-hover:scale-105 group-hover:brightness-110 transition duration-500" />
+            </button>
           ))}
         </div>
+        <div className="mt-8 flex justify-center">
+          <Link to="/gallery" className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-6 py-3 text-sm font-medium hover:bg-secondary transition">
+            View all photos <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
+      {lightbox !== null && (
+        <Lightbox images={allShots} index={lightbox} onClose={() => setLightbox(null)} onIndex={setLightbox} />
+      )}
     </section>
   );
 }
+
+export function Lightbox({ images, index, onClose, onIndex }: {
+  images: string[]; index: number; onClose: () => void; onIndex: (i: number) => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") onIndex((index + 1) % images.length);
+      if (e.key === "ArrowLeft") onIndex((index - 1 + images.length) % images.length);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, images.length, onClose, onIndex]);
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/95 grid place-items-center p-4" onClick={onClose}>
+      <button className="absolute top-4 right-4 text-white/80 hover:text-white p-2" onClick={onClose} aria-label="Close"><X className="h-6 w-6" /></button>
+      <button className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2" onClick={(e) => { e.stopPropagation(); onIndex((index - 1 + images.length) % images.length); }} aria-label="Previous"><ChevronLeft className="h-8 w-8" /></button>
+      <button className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2" onClick={(e) => { e.stopPropagation(); onIndex((index + 1) % images.length); }} aria-label="Next"><ChevronRight className="h-8 w-8" /></button>
+      <img src={images[index]} alt="" className="max-h-[90vh] max-w-[92vw] object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-xs">{index + 1} / {images.length}</div>
+    </div>
+  );
+}
+
 
 function Nearby({ bundle }: { bundle: ContentBundle }) {
   const n: any = bundle.content.nearby;

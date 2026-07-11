@@ -56,6 +56,36 @@ export type Database = {
         }
         Relationships: []
       }
+      gallery_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          sort_order: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sort_order?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sort_order?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -77,6 +107,51 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      site_content: {
+        Row: {
+          data: Json
+          section: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          data?: Json
+          section: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          data?: Json
+          section?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      site_media: {
+        Row: {
+          alt: string | null
+          slot: string
+          updated_at: string
+          updated_by: string | null
+          url: string
+        }
+        Insert: {
+          alt?: string | null
+          slot: string
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+        }
+        Update: {
+          alt?: string | null
+          slot?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
         }
         Relationships: []
       }
