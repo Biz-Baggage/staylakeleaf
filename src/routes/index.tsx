@@ -19,6 +19,7 @@ import kayak from "@/assets/kayak.jpg";
 import sunrise from "@/assets/sunrise.jpg";
 import exterior from "@/assets/exterior.jpg";
 import { getSiteContent } from "@/lib/content.functions";
+import { listReservedRanges, type ReservedRange } from "@/lib/bookings.functions";
 
 const ICONS: Record<string, LucideIcon> = {
   Leaf, Waves, Sailboat, Flame, Mountain, Sun, Wifi, Wind, Utensils, Refrigerator,
@@ -31,21 +32,30 @@ const FALLBACK_IMAGES: Record<string, string> = {
   sunrise, kayak, bbq, campfire,
 };
 
-const contentQuery = () => {
-  return queryOptions({
-    queryKey: ["site-content-public"],
-    queryFn: async () => {
-      // called client-side; wrap the RPC
-      const mod = await import("@/lib/content.functions");
-      return await mod.getSiteContent();
-    },
-    staleTime: 60_000,
-  });
-};
+const contentQuery = () => queryOptions({
+  queryKey: ["site-content-public"],
+  queryFn: async () => {
+    const mod = await import("@/lib/content.functions");
+    return await mod.getSiteContent();
+  },
+  staleTime: 60_000,
+});
+
+const reservedQuery = () => queryOptions({
+  queryKey: ["reserved-ranges-public"],
+  queryFn: async () => {
+    const mod = await import("@/lib/bookings.functions");
+    return await mod.listReservedRanges();
+  },
+  staleTime: 60_000,
+});
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(contentQuery());
+    await Promise.all([
+      context.queryClient.ensureQueryData(contentQuery()),
+      context.queryClient.ensureQueryData(reservedQuery()),
+    ]);
   },
   head: () => ({ meta: [] }),
   component: LakeLeafLanding,
