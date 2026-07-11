@@ -58,18 +58,7 @@ function AdminPage() {
   }
 
   if (!adminCheck?.isAdmin) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-secondary/40 px-4">
-        <div className="max-w-md text-center bg-card border border-border rounded-2xl p-8">
-          <h1 className="text-2xl font-display">Not an admin</h1>
-          <p className="mt-2 text-muted-foreground text-sm">Your account is signed in but doesn't have admin access.</p>
-          <div className="mt-6 flex justify-center gap-2">
-            <Button variant="outline" onClick={signOut}>Sign out</Button>
-            <Button asChild><Link to="/">Back to site</Link></Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <ViewerBookings onSignOut={signOut} />;
   }
 
   return (
