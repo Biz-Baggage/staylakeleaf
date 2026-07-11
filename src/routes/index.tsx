@@ -411,6 +411,7 @@ function Availability({ bundle }: { bundle: ContentBundle }) {
   const av: any = bundle.content.availability;
   const c: any = bundle.content.contact;
   const wa = whatsappUrl(c);
+  const { data: ranges = [] } = useSuspenseQuery(reservedQuery());
   const [monthOffset, setMonthOffset] = useState(0);
   const today = new Date();
   const view = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
@@ -419,11 +420,18 @@ function Availability({ bundle }: { bundle: ContentBundle }) {
   const firstWeekday = view.getDay();
 
   const reservedDays = useMemo(() => {
-    const seed = view.getFullYear() * 12 + view.getMonth();
     const set = new Set<number>();
-    for (let i = 0; i < 8; i++) set.add(((seed * 7 + i * 11) % daysInMonth) + 1);
+    const y = view.getFullYear();
+    const m = view.getMonth();
+    for (const r of ranges as ReservedRange[]) {
+      const start = new Date(r.check_in + "T00:00:00");
+      const end = new Date(r.check_out + "T00:00:00");
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        if (d.getFullYear() === y && d.getMonth() === m) set.add(d.getDate());
+      }
+    }
     return set;
-  }, [view, daysInMonth]);
+  }, [ranges, view]);
 
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstWeekday; i++) cells.push(null);
