@@ -23,7 +23,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Leaf, LogOut, Loader2, Plus, ChevronLeft, ChevronRight, Pencil, Trash2, Upload, RotateCcw, ArrowUp, ArrowDown } from "lucide-react";
+import { Leaf, LogOut, Loader2, Plus, ChevronLeft, ChevronRight, Pencil, Trash2, Upload, RotateCcw, ArrowUp, ArrowDown, Shield, ShieldOff, UserPlus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
