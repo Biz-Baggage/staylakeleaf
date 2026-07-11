@@ -768,3 +768,118 @@ function ViewerBookings({ onSignOut }: { onSignOut: () => void }) {
     </div>
   );
 }
+
+/* ================= USERS ================= */
+
+function UsersPanel() {
+  const qc = useQueryClient();
+  const listFn = useServerFn(listUsers);
+  const createFn = useServerFn(createViewerUser);
+  const deleteFn = useServerFn(deleteManagedUser);
+  const setAdminFn = useServerFn(setUserAdmin);
+
+  const { data: users = [], isLoading } = useQuery({ queryKey: ["managed-users"], queryFn: () => listFn() });
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ email: "", password: "", full_name: "", is_admin: false });
+
+  const createMut = useMutation({
+    mutationFn: async () => { await createFn({ data: form }); },
+    onSuccess: () => {
+      toast.success("User added");
+      setDialogOpen(false);
+      setForm({ email: "", password: "", full_name: "", is_admin: false });
+      qc.invalidateQueries({ queryKey: ["managed-users"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to add user"),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => { await deleteFn({ data: { id } }); },
+    onSuccess: () => { toast.success("User removed"); qc.invalidateQueries({ queryKey: ["managed-users"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  const roleMut = useMutation({
+    mutationFn: async (v: { id: string; is_admin: boolean }) => { await setAdminFn({ data: v }); },
+    onSuccess: () => { toast.success("Role updated"); qc.invalidateQueries({ queryKey: ["managed-users"] }); },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  if (isLoading) return <div className="grid place-items-center py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-2xl">Users & access</h2>
+          <p className="text-sm text-muted-foreground mt-1">Add viewers who can sign in and see the booking list. Toggle Admin to give full access.</p>
+        </div>
+        <Button onClick={() => setDialogOpen(true)}><UserPlus className="h-4 w-4 mr-1.5" /> Add user</Button>
+      </div>
+
+      <Card className="p-6">
+        {users.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No users yet.</p>
+        ) : (
+          <div className="divide-y divide-border">
+            {users.map((u: ManagedUser) => (
+              <div key={u.id} className="py-3 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium truncate">{u.email ?? "(no email)"}</p>
+                    <Badge variant={u.is_admin ? "default" : "secondary"}>
+                      {u.is_admin ? <><Shield className="h-3 w-3 mr-1" />Admin</> : <>Viewer</>}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Added {new Date(u.created_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">Admin</Label>
+                    <Switch
+                      checked={u.is_admin}
+                      onCheckedChange={(v) => roleMut.mutate({ id: u.id, is_admin: v })}
+                      disabled={roleMut.isPending}
+                    />
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Delete ${u.email}?`)) deleteMut.mutate(u.id); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Add user</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+            <div><Label>Full name (optional)</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
+            <div>
+              <Label>Temporary password</Label>
+              <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Min 8 characters" />
+              <p className="text-xs text-muted-foreground mt-1">Share this with the user so they can sign in.</p>
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-border p-3">
+              <div>
+                <Label className="text-sm">Grant admin access</Label>
+                <p className="text-xs text-muted-foreground">Off = viewer (sees booking list only)</p>
+              </div>
+              <Switch checked={form.is_admin} onCheckedChange={(v) => setForm({ ...form, is_admin: v })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => createMut.mutate()} disabled={createMut.isPending}>
+              {createMut.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />} Add user
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
