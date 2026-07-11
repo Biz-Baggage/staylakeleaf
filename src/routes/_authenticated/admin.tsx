@@ -83,11 +83,13 @@ function AdminPage() {
             <TabsTrigger value="content">Content</TabsTrigger>
             <TabsTrigger value="media">Images</TabsTrigger>
             <TabsTrigger value="gallery">Gallery</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
           <TabsContent value="bookings"><BookingsPanel /></TabsContent>
           <TabsContent value="content"><ContentPanel /></TabsContent>
           <TabsContent value="media"><MediaPanel /></TabsContent>
           <TabsContent value="gallery"><GalleryPanel /></TabsContent>
+          <TabsContent value="users"><UsersPanel /></TabsContent>
         </Tabs>
       </main>
     </div>
