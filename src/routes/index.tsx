@@ -19,6 +19,7 @@ import kayak from "@/assets/kayak.jpg";
 import sunrise from "@/assets/sunrise.jpg";
 import exterior from "@/assets/exterior.jpg";
 import { getSiteContent } from "@/lib/content.functions";
+import { listReservedRanges, type ReservedRange } from "@/lib/bookings.functions";
 
 const ICONS: Record<string, LucideIcon> = {
   Leaf, Waves, Sailboat, Flame, Mountain, Sun, Wifi, Wind, Utensils, Refrigerator,
@@ -31,21 +32,30 @@ const FALLBACK_IMAGES: Record<string, string> = {
   sunrise, kayak, bbq, campfire,
 };
 
-const contentQuery = () => {
-  return queryOptions({
-    queryKey: ["site-content-public"],
-    queryFn: async () => {
-      // called client-side; wrap the RPC
-      const mod = await import("@/lib/content.functions");
-      return await mod.getSiteContent();
-    },
-    staleTime: 60_000,
-  });
-};
+const contentQuery = () => queryOptions({
+  queryKey: ["site-content-public"],
+  queryFn: async () => {
+    const mod = await import("@/lib/content.functions");
+    return await mod.getSiteContent();
+  },
+  staleTime: 60_000,
+});
+
+const reservedQuery = () => queryOptions({
+  queryKey: ["reserved-ranges-public"],
+  queryFn: async () => {
+    const mod = await import("@/lib/bookings.functions");
+    return await mod.listReservedRanges();
+  },
+  staleTime: 60_000,
+});
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(contentQuery());
+    await Promise.all([
+      context.queryClient.ensureQueryData(contentQuery()),
+      context.queryClient.ensureQueryData(reservedQuery()),
+    ]);
   },
   head: () => ({ meta: [] }),
   component: LakeLeafLanding,
@@ -401,6 +411,7 @@ function Availability({ bundle }: { bundle: ContentBundle }) {
   const av: any = bundle.content.availability;
   const c: any = bundle.content.contact;
   const wa = whatsappUrl(c);
+  const { data: ranges = [] } = useSuspenseQuery(reservedQuery());
   const [monthOffset, setMonthOffset] = useState(0);
   const today = new Date();
   const view = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
@@ -409,11 +420,18 @@ function Availability({ bundle }: { bundle: ContentBundle }) {
   const firstWeekday = view.getDay();
 
   const reservedDays = useMemo(() => {
-    const seed = view.getFullYear() * 12 + view.getMonth();
     const set = new Set<number>();
-    for (let i = 0; i < 8; i++) set.add(((seed * 7 + i * 11) % daysInMonth) + 1);
+    const y = view.getFullYear();
+    const m = view.getMonth();
+    for (const r of ranges as ReservedRange[]) {
+      const start = new Date(r.check_in + "T00:00:00");
+      const end = new Date(r.check_out + "T00:00:00");
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        if (d.getFullYear() === y && d.getMonth() === m) set.add(d.getDate());
+      }
+    }
     return set;
-  }, [view, daysInMonth]);
+  }, [ranges, view]);
 
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstWeekday; i++) cells.push(null);
