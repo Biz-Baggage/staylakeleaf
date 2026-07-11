@@ -103,13 +103,14 @@ type FormState = {
   check_out: string;
   phone: string;
   notes: string;
+  cost: string;
   status: BookingStatus;
 };
 
 const emptyForm = (dateStr?: string): FormState => {
   const start = dateStr ?? new Date().toISOString().slice(0, 10);
   const next = new Date(new Date(start).getTime() + 86400000).toISOString().slice(0, 10);
-  return { guest_name: "", total_guests: 2, check_in: start, check_out: next, phone: "", notes: "", status: "confirmed" };
+  return { guest_name: "", total_guests: 2, check_in: start, check_out: next, phone: "", notes: "", cost: "", status: "confirmed" };
 };
 
 function BookingsPanel() {
