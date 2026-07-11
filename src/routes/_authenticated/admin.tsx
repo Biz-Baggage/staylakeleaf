@@ -158,13 +158,20 @@ function BookingsPanel() {
     setForm({
       id: b.id, guest_name: b.guest_name, total_guests: b.total_guests,
       check_in: b.check_in, check_out: b.check_out,
-      phone: b.phone ?? "", notes: b.notes ?? "", status: b.status,
+      phone: b.phone ?? "", notes: b.notes ?? "",
+      cost: b.cost != null ? String(b.cost) : "",
+      status: b.status,
     });
     setDialogOpen(true);
   };
 
   const saveMutation = useMutation({
-    mutationFn: async () => { await upsertFn({ data: form }); },
+    mutationFn: async () => {
+      const trimmed = form.cost.trim();
+      const cost = trimmed === "" ? null : Number(trimmed);
+      if (cost != null && (!Number.isFinite(cost) || cost < 0)) throw new Error("Cost must be a positive number");
+      await upsertFn({ data: { ...form, cost } });
+    },
     onSuccess: () => { toast.success(form.id ? "Booking updated" : "Booking added"); qc.invalidateQueries({ queryKey: ["bookings"] }); setDialogOpen(false); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Save failed"),
   });
