@@ -727,6 +727,45 @@ function ViewerBookings({ onSignOut }: { onSignOut: () => void }) {
     staleTime: 30_000,
   });
 
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [showAllMonths, setShowAllMonths] = useState(false);
+
+  const today = useMemo(() => new Date(), []);
+  const view = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+  const monthLabel = view.toLocaleString("en-US", { month: "long", year: "numeric" });
+  const viewKey = `${view.getFullYear()}-${String(view.getMonth() + 1).padStart(2, "0")}`;
+  const daysInMonth = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+  const firstWeekday = view.getDay();
+
+  const filteredBookings = useMemo(() => {
+    if (showAllMonths) return bookings;
+    const monthStart = new Date(view.getFullYear(), view.getMonth(), 1);
+    const monthEnd = new Date(view.getFullYear(), view.getMonth() + 1, 1);
+    return bookings.filter((b) => new Date(b.check_in) < monthEnd && new Date(b.check_out) > monthStart);
+  }, [bookings, showAllMonths, viewKey]);
+
+  const cells: (string | null)[] = [];
+  for (let i = 0; i < firstWeekday; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = new Date(view.getFullYear(), view.getMonth(), d).toISOString().slice(0, 10);
+    cells.push(iso);
+  }
+
+  const bookingsByDay = useMemo(() => {
+    const map = new Map<string, Booking[]>();
+    for (const b of bookings) {
+      const start = new Date(b.check_in);
+      const end = new Date(b.check_out);
+      for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+        const key = d.toISOString().slice(0, 10);
+        const arr = map.get(key) ?? [];
+        arr.push(b);
+        map.set(key, arr);
+      }
+    }
+    return map;
+  }, [bookings]);
+
   return (
     <div className="min-h-screen bg-secondary/30">
       <header className="border-b border-border bg-background/90 backdrop-blur sticky top-0 z-30">
@@ -739,30 +778,80 @@ function ViewerBookings({ onSignOut }: { onSignOut: () => void }) {
           </Button>
         </div>
       </header>
-      <main className="container-page py-10">
-        <div className="mb-6">
+      <main className="container-page py-10 space-y-6">
+        <div>
           <h1 className="text-2xl font-display font-medium">Booking slots</h1>
           <p className="text-sm text-muted-foreground mt-1">Read-only view of upcoming and past reservations.</p>
         </div>
+
         {isLoading ? (
           <div className="grid place-items-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-        ) : bookings.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">No bookings yet.</Card>
         ) : (
-          <div className="grid gap-3">
-            {bookings.map((b) => (
-              <Card key={b.id} className="p-5 flex flex-wrap items-center justify-between gap-4">
+          <>
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <Button variant="outline" size="icon" onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+                <h3 className="font-display text-lg">{monthLabel}</h3>
+                <Button variant="outline" size="icon" onClick={() => setMonthOffset((m) => m + 1)}><ChevronRight className="h-4 w-4" /></Button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-xs uppercase tracking-widest text-muted-foreground text-center mb-2">
+                {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map((d) => <div key={d} className="py-1">{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {cells.map((iso, i) => {
+                  if (!iso) return <div key={i} className="min-h-[80px]" />;
+                  const day = Number(iso.slice(8, 10));
+                  const dayBookings = bookingsByDay.get(iso) ?? [];
+                  return (
+                    <div key={i} className="min-h-[80px] rounded-md border border-border p-1.5 text-left bg-background">
+                      <div className="text-xs font-semibold text-muted-foreground">{day}</div>
+                      <div className="mt-1 space-y-0.5">
+                        {dayBookings.slice(0, 3).map((b) => (
+                          <div key={b.id} className={`text-[10px] leading-tight truncate rounded px-1 py-0.5 ${
+                            b.status === "cancelled" || b.status === "declined" ? "bg-muted text-muted-foreground line-through"
+                              : b.status === "confirmed" ? "bg-primary/15 text-primary" : "bg-accent text-accent-foreground"
+                          }`}>{b.guest_name} ({b.total_guests})</div>
+                        ))}
+                        {dayBookings.length > 3 && <div className="text-[10px] text-muted-foreground">+{dayBookings.length - 3} more</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <div>
-                  <div className="font-medium">{b.guest_name}</div>
-                  <div className="text-sm text-muted-foreground mt-0.5">
-                    {b.check_in} → {b.check_out} · {b.total_guests} guest{b.total_guests === 1 ? "" : "s"}
-                  </div>
-                  {b.notes && <div className="text-sm text-muted-foreground mt-1">{b.notes}</div>}
+                  <h3 className="font-display text-lg">Bookings — {showAllMonths ? "all months" : monthLabel}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {showAllMonths ? "Showing every booking." : "Synced with the calendar above."}
+                  </p>
                 </div>
-                <Badge variant="secondary" className="capitalize">{b.status}</Badge>
-              </Card>
-            ))}
-          </div>
+                <Button variant="outline" size="sm" onClick={() => setShowAllMonths((v) => !v)}>
+                  {showAllMonths ? "Show current month" : "Show all months"}
+                </Button>
+              </div>
+              {filteredBookings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No bookings for this month.</p>
+              ) : (
+                <div className="grid gap-3">
+                  {filteredBookings.map((b) => (
+                    <div key={b.id} className="p-4 rounded-md border border-border flex flex-wrap items-center justify-between gap-4 bg-background">
+                      <div>
+                        <div className="font-medium">{b.guest_name}</div>
+                        <div className="text-sm text-muted-foreground mt-0.5">
+                          {b.check_in} → {b.check_out} · {b.total_guests} guest{b.total_guests === 1 ? "" : "s"}
+                        </div>
+                        {b.notes && <div className="text-sm text-muted-foreground mt-1">{b.notes}</div>}
+                      </div>
+                      <Badge variant="secondary" className="capitalize">{b.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </>
         )}
       </main>
     </div>
