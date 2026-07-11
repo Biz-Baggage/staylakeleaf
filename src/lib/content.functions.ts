@@ -8,10 +8,11 @@ export type SiteMediaEntry = { url: string; alt?: string };
 export type GalleryImage = { id: string; url: string; caption: string | null; sort_order: number };
 
 export type ContentBundle = {
-  content: Record<string, Record<string, unknown>>;
+  content: Record<string, any>;
   media: Record<string, SiteMediaEntry>;
   gallery: GalleryImage[];
 };
+
 
 function publicClient() {
   return createClient<Database>(
@@ -30,10 +31,11 @@ export const getSiteContent = createServerFn({ method: "GET" }).handler(async ()
     sb.from("gallery_images").select("id,url,caption,sort_order").order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
   ]);
 
-  const content: Record<string, Record<string, unknown>> = { ...DEFAULT_CONTENT };
+  const content: Record<string, any> = { ...DEFAULT_CONTENT };
   for (const row of contentRes.data ?? []) {
-    content[row.section] = row.data as Record<string, unknown>;
+    content[row.section] = row.data as any;
   }
+
   const media: Record<string, SiteMediaEntry> = {};
   for (const row of mediaRes.data ?? []) {
     media[row.slot] = { url: row.url, alt: row.alt ?? undefined };
@@ -47,14 +49,15 @@ export const getSiteContent = createServerFn({ method: "GET" }).handler(async ()
 // -------- Admin: content --------
 export const saveContentSection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { section: string; data: Record<string, unknown> }) => data)
+  .inputValidator((data: { section: string; data: any }) => data)
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("site_content")
-      .upsert({ section: data.section, data: data.data, updated_by: context.userId }, { onConflict: "section" });
+      .upsert({ section: data.section, data: data.data as any, updated_by: context.userId }, { onConflict: "section" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const resetContentSection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -109,13 +112,14 @@ export const updateGalleryImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { id: string; caption?: string; sort_order?: number }) => data)
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = {};
+    const patch: { caption?: string | null; sort_order?: number } = {};
     if (data.caption !== undefined) patch.caption = data.caption;
     if (data.sort_order !== undefined) patch.sort_order = data.sort_order;
     const { error } = await context.supabase.from("gallery_images").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 export const deleteGalleryImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
