@@ -103,13 +103,14 @@ type FormState = {
   check_out: string;
   phone: string;
   notes: string;
+  cost: string;
   status: BookingStatus;
 };
 
 const emptyForm = (dateStr?: string): FormState => {
   const start = dateStr ?? new Date().toISOString().slice(0, 10);
   const next = new Date(new Date(start).getTime() + 86400000).toISOString().slice(0, 10);
-  return { guest_name: "", total_guests: 2, check_in: start, check_out: next, phone: "", notes: "", status: "confirmed" };
+  return { guest_name: "", total_guests: 2, check_in: start, check_out: next, phone: "", notes: "", cost: "", status: "confirmed" };
 };
 
 function BookingsPanel() {
@@ -123,6 +124,21 @@ function BookingsPanel() {
   const [monthOffset, setMonthOffset] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [listMonth, setListMonth] = useState<string>("all");
+
+  const monthOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of bookings) set.add(b.check_in.slice(0, 7));
+    return Array.from(set).sort().reverse().map((ym) => {
+      const [y, m] = ym.split("-").map(Number);
+      return { value: ym, label: new Date(y, m - 1, 1).toLocaleString("en-US", { month: "long", year: "numeric" }) };
+    });
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    if (listMonth === "all") return bookings;
+    return bookings.filter((b) => b.check_in.slice(0, 7) === listMonth);
+  }, [bookings, listMonth]);
 
   const today = useMemo(() => new Date(), []);
   const view = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
@@ -157,13 +173,20 @@ function BookingsPanel() {
     setForm({
       id: b.id, guest_name: b.guest_name, total_guests: b.total_guests,
       check_in: b.check_in, check_out: b.check_out,
-      phone: b.phone ?? "", notes: b.notes ?? "", status: b.status,
+      phone: b.phone ?? "", notes: b.notes ?? "",
+      cost: b.cost != null ? String(b.cost) : "",
+      status: b.status,
     });
     setDialogOpen(true);
   };
 
   const saveMutation = useMutation({
-    mutationFn: async () => { await upsertFn({ data: form }); },
+    mutationFn: async () => {
+      const trimmed = form.cost.trim();
+      const cost = trimmed === "" ? null : Number(trimmed);
+      if (cost != null && (!Number.isFinite(cost) || cost < 0)) throw new Error("Cost must be a positive number");
+      await upsertFn({ data: { ...form, cost } });
+    },
     onSuccess: () => { toast.success(form.id ? "Booking updated" : "Booking added"); qc.invalidateQueries({ queryKey: ["bookings"] }); setDialogOpen(false); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Save failed"),
   });
@@ -220,17 +243,35 @@ function BookingsPanel() {
       </Card>
 
       <Card className="p-6">
-        <h3 className="font-display text-lg mb-3">All bookings</h3>
-        {bookings.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No bookings yet.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h3 className="font-display text-lg">All bookings</h3>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs text-muted-foreground">Filter month</Label>
+            <Select
+              value={listMonth}
+              onValueChange={setListMonth}
+            >
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All months</SelectItem>
+                {monthOptions.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        {filteredBookings.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No bookings for this month.</p>
         ) : (
           <div className="divide-y divide-border">
-            {bookings.map((b) => (
+            {filteredBookings.map((b) => (
               <div key={b.id} className="py-3 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium truncate">{b.guest_name}</p>
                     <Badge variant={b.status === "cancelled" || b.status === "declined" ? "outline" : b.status === "confirmed" ? "default" : "secondary"}>{b.status}</Badge>
+                    {b.cost != null && <Badge variant="outline">৳{Number(b.cost).toLocaleString()}</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground">{b.check_in} → {b.check_out} · {b.total_guests} guest{b.total_guests !== 1 ? "s" : ""}{b.phone ? ` · ${b.phone}` : ""}</p>
                 </div>
@@ -262,7 +303,10 @@ function BookingsPanel() {
                 </Select>
               </div>
             </div>
-            <div><Label>Phone (optional)</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Phone (optional)</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+              <div><Label>Cost (optional)</Label><Input type="number" min={0} step="0.01" placeholder="e.g. 12000" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} /></div>
+            </div>
             <div><Label>Notes (optional)</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
           </div>
           <DialogFooter className="gap-2">

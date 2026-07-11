@@ -30,6 +30,7 @@ export type Booking = {
   check_out: string;
   phone: string | null;
   notes: string | null;
+  cost: number | null;
   status: BookingStatus;
   created_at: string;
   updated_at: string;
@@ -57,6 +58,7 @@ export const upsertBooking = createServerFn({ method: "POST" })
     check_out: string;
     phone?: string;
     notes?: string;
+    cost?: number | null;
     status?: BookingStatus;
   }) => {
     if (!input.guest_name?.trim()) throw new Error("Guest name required");
@@ -64,6 +66,7 @@ export const upsertBooking = createServerFn({ method: "POST" })
     if (!input.check_in || !input.check_out) throw new Error("Dates required");
     if (new Date(input.check_out) <= new Date(input.check_in)) throw new Error("Check-out must be after check-in");
     if (!Number.isFinite(input.total_guests) || input.total_guests < 1) throw new Error("Guests must be at least 1");
+    if (input.cost != null && (!Number.isFinite(input.cost) || input.cost < 0)) throw new Error("Cost must be a positive number");
     return input;
   })
   .handler(async ({ data, context }): Promise<Booking> => {
@@ -75,6 +78,7 @@ export const upsertBooking = createServerFn({ method: "POST" })
       check_out: data.check_out,
       phone: data.phone?.trim() || null,
       notes: data.notes?.trim() || null,
+      cost: data.cost ?? null,
       status: data.status ?? "confirmed",
       created_by: userId,
     };
@@ -113,14 +117,14 @@ async function syncBookingsToSheet(sb: any): Promise<void> {
   const tab = process.env.GOOGLE_SHEETS_TAB || "Bookings";
   const { data, error } = await sb
     .from("bookings")
-    .select("id,guest_name,total_guests,check_in,check_out,phone,notes,status,created_at,updated_at")
+    .select("id,guest_name,total_guests,check_in,check_out,phone,notes,cost,status,created_at,updated_at")
     .order("check_in", { ascending: true });
   if (error) throw error;
 
-  const header = ["ID","Guest","Guests","Check-in","Check-out","Phone","Notes","Status","Created","Updated"];
+  const header = ["ID","Guest","Guests","Check-in","Check-out","Phone","Notes","Cost","Status","Created","Updated"];
   const rows = (data ?? []).map((b: any) => [
     b.id, b.guest_name, String(b.total_guests), b.check_in, b.check_out,
-    b.phone ?? "", b.notes ?? "", b.status, b.created_at, b.updated_at,
+    b.phone ?? "", b.notes ?? "", b.cost != null ? String(b.cost) : "", b.status, b.created_at, b.updated_at,
   ]);
   const values = [header, ...rows];
 
