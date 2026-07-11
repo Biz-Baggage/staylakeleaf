@@ -88,14 +88,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "A private lakeside retreat on Kaptai Lake, accessible only by boat. Reconnect with nature at Lake Leaf Nature Stay — for families, friends and quiet mornings.",
       },
       { name: "author", content: "Lake Leaf Nature Stay" },
-      { property: "og:title", content: "Lake Leaf Nature Stay — Private Lakeside Retreat" },
+      { property: "og:title", content: "Lake Leaf Nature Stay — A Private Lakeside Retreat on Kaptai Lake" },
       {
         property: "og:description",
         content:
-          "A peaceful private retreat on Kaptai Lake. Boat access only. Plan your stay with the host.",
+          "A private lakeside retreat on Kaptai Lake, accessible only by boat. Reconnect with nature at Lake Leaf Nature Stay — for families, friends and quiet mornings.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Lake Leaf Nature Stay — A Private Lakeside Retreat on Kaptai Lake" },
+      { name: "twitter:description", content: "A private lakeside retreat on Kaptai Lake, accessible only by boat. Reconnect with nature at Lake Leaf Nature Stay — for families, friends and quiet mornings." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/1f672e76-4df2-4062-9114-ccfd418b7b1e" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/1f672e76-4df2-4062-9114-ccfd418b7b1e" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
