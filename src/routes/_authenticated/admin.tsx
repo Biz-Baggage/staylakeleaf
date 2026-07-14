@@ -265,6 +265,7 @@ function BookingsPanel() {
                     {b.cost != null && <Badge variant="outline">৳{Number(b.cost).toLocaleString()}</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground">{b.check_in} → {b.check_out} · {b.total_guests} guest{b.total_guests !== 1 ? "s" : ""}{b.phone ? ` · ${b.phone}` : ""}</p>
+                  {b.notes && <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{b.notes}</p>}
                 </div>
                 <div className="flex gap-1">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(b)}><Pencil className="h-4 w-4" /></Button>
