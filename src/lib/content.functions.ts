@@ -13,18 +13,22 @@ export type ContentBundle = {
   gallery: GalleryImage[];
 };
 
-
-function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
-}
-
 // -------- Public read --------
 export const getSiteContent = createServerFn({ method: "GET" }).handler(async (): Promise<ContentBundle> => {
-  const sb = publicClient();
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  const sb = createClient<Database>(process.env.SUPABASE_URL!, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`) {
+          headers.delete("Authorization");
+        }
+        headers.set("apikey", key);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
   const [contentRes, mediaRes, galleryRes] = await Promise.all([
     sb.from("site_content").select("section,data"),
     sb.from("site_media").select("slot,url,alt"),

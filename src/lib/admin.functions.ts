@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireAdmin } from "./admin-auth.server";
 
 export const checkAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -14,14 +15,6 @@ export const checkAdmin = createServerFn({ method: "GET" })
     if (error) return { isAdmin: false, email: (claims.email as string) ?? null };
     return { isAdmin: !!data, email: (claims.email as string) ?? null };
   });
-
-async function requireAdmin(context: { supabase: any; userId: string }) {
-  const { data } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
-  if (!data) throw new Error("Forbidden");
-}
 
 export type ManagedUser = {
   id: string;
