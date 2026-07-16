@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "sdk_version": "0.22.2",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://yltayxumcfxvxfusirja.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "lake-leaf-mcp",
+      "version": "0.1.0",
+      "title": "Lake Leaf"
+    },
+    "tools": [
+      {
+        "name": "list_bookings",
+        "title": "List bookings",
+        "description": "List Lake Leaf bookings visible to the signed-in user (admins see all bookings, others see what RLS permits). Ordered by check-in date.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_reserved_ranges",
+        "title": "Get reserved date ranges",
+        "description": "Get the list of currently reserved check-in / check-out date ranges for Lake Leaf. Useful for checking availability before proposing dates.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_booking",
+        "title": "Create booking",
+        "description": "Create a new Lake Leaf booking. Dates use YYYY-MM-DD. Requires an admin-level account under existing RLS.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "guest_name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Guest full name."
+            },
+            "total_guests": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of guests."
+            },
+            "check_in": {
+              "type": "string",
+              "description": "Check-in date, YYYY-MM-DD."
+            },
+            "check_out": {
+              "type": "string",
+              "description": "Check-out date, YYYY-MM-DD (must be after check_in)."
+            },
+            "phone": {
+              "type": "string",
+              "description": "Guest phone number."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Internal notes about this booking."
+            },
+            "cost": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Total cost."
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "new",
+                "contacted",
+                "confirmed",
+                "declined",
+                "cancelled"
+              ],
+              "description": "Booking status. Defaults to confirmed."
+            }
+          },
+          "required": [
+            "guest_name",
+            "total_guests",
+            "check_in",
+            "check_out"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
