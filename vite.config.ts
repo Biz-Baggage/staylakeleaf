@@ -13,6 +13,11 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  nitro: {
+    // When building on Vercel (VERCEL env is set by Vercel), emit a Vercel-compatible
+    // output at .vercel/output. Lovable's own build ignores this and keeps its default.
+    preset: process.env.VERCEL ? "vercel" : undefined,
+  },
   vite: {
     plugins: [mcpPlugin()],
   },
